@@ -1,1 +1,332 @@
 # RUBUID
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>RUBUID — Randomly Unique But Universal Identifyer</title>
+<style>
+  :root{
+    --bg:#0f1724; --card:#0b1220; --muted:#9aa4b2; --accent:#7dd3fc;
+    --glass: rgba(255,255,255,0.03);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(180deg,#071022 0%, #07121b 60%); color:#e6eef6;
+    padding:28px;
+  }
+  .wrap{
+    width:100%; max-width:900px; background:var(--card); border-radius:12px; padding:20px;
+    box-shadow: 0 6px 30px rgba(2,6,23,0.7);
+    border: 1px solid rgba(125,211,252,0.05);
+  }
+  header{display:flex; gap:12px; align-items:center; margin-bottom:14px}
+  .logo{
+    width:52px; height:52px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(135deg,#042a3a,#06445a); font-weight:700; color:white; font-size:12px;
+    box-shadow: inset 0 -6px 18px rgba(0,0,0,0.35);
+  }
+  h1{font-size:18px;margin:0}
+  p.lead{margin:4px 0 0; color:var(--muted); font-size:13px}
+  .grid{display:grid; grid-template-columns:1fr 360px; gap:18px; margin-top:18px}
+  .card{background:var(--glass); padding:14px; border-radius:10px; border:1px solid rgba(255,255,255,0.02)}
+  .big-out{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace; font-size:20px;
+    letter-spacing:0.6px; padding:12px; background:linear-gradient(90deg, rgba(255,255,255,0.02), transparent);
+    border-radius:8px; display:flex; gap:8px; align-items:center; justify-content:space-between;
+  }
+  .controls{display:flex; flex-direction:column; gap:8px}
+  label{display:flex; gap:8px; align-items:center; font-size:13px; color:var(--muted)}
+  select,input[type="number"]{background:transparent; color:inherit; border:1px solid rgba(255,255,255,0.04); padding:8px 10px; border-radius:8px}
+  .row{display:flex; gap:8px; align-items:center}
+  button{
+    background:linear-gradient(180deg,var(--accent),#38bdf8); color:#022; border:none; padding:8px 12px; border-radius:9px;
+    cursor:pointer; font-weight:600;
+  }
+  button.ghost{background:transparent; border:1px solid rgba(255,255,255,0.04); color:var(--muted)}
+  small{color:var(--muted)}
+  ul.history{list-style:none; padding:0; margin:8px 0 0; display:flex; flex-direction:column; gap:6px; max-height:200px; overflow:auto}
+  li.hist-item{display:flex; align-items:center; gap:8px; justify-content:space-between; padding:6px 8px; border-radius:8px; background:rgba(255,255,255,0.01); font-size:13px}
+  .muted{color:var(--muted)}
+  footer{margin-top:16px; display:flex; justify-content:space-between; align-items:center; color:var(--muted); font-size:13px}
+  @media (max-width:880px){ .grid{ grid-template-columns:1fr; } .big-out{font-size:16px} }
+</style>
+</head>
+<body>
+  <div class="wrap" role="application" aria-labelledby="title">
+    <header>
+      <div class="logo">RUBUID</div>
+      <div>
+        <h1 id="title">RUBUID Generator</h1>
+        <p class="lead">Randomly Unique But Universal Identifyer — secure, fast, and customizable.</p>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- Left: main generator -->
+      <div class="card" aria-live="polite">
+        <div class="big-out" id="outWrapper">
+          <div id="rubuid" aria-label="Generated RUBUID">—</div>
+          <div class="row">
+            <button id="regenBtn" title="Generate a new RUBUID">New</button>
+            <button id="copyBtn" class="ghost" title="Copy RUBUID">Copy</button>
+          </div>
+        </div>
+
+        <div style="margin-top:12px" class="controls">
+          <label>
+            Mode
+            <select id="mode">
+              <option value="v4">Random (secure) — recommended</option>
+              <option value="time">Time+Random (sortable)</option>
+            </select>
+          </label>
+
+          <label>
+            Bit length
+            <select id="bits">
+              <option value="128">128 bits (compact)</option>
+              <option value="160">160 bits</option>
+              <option value="256">256 bits (extra unique)</option>
+            </select>
+          </label>
+
+          <label>
+            Separator
+            <select id="sep">
+              <option value="-">hyphen (-)</option>
+              <option value=":">colon (:)</option>
+              <option value="">none</option>
+            </select>
+          </label>
+
+          <label><input type="checkbox" id="prefix" checked /> Prefix with "RUB"</label>
+          <label><input type="checkbox" id="upper" /> UPPERCASE</label>
+
+          <div class="row">
+            <button id="bulkBtn" class="ghost">Generate 10</button>
+            <button id="downloadBtn" class="ghost">Download TXT</button>
+            <button id="clearBtn" class="ghost">Clear history</button>
+          </div>
+
+          <small class="muted">Note: Uses `crypto.getRandomValues` when available for strong randomness.</small>
+        </div>
+
+        <div style="margin-top:12px">
+          <strong>History</strong>
+          <ul class="history" id="history" aria-label="Generated RUBUID history">
+            <!-- items -->
+          </ul>
+        </div>
+      </div>
+
+      <!-- Right: info / preview -->
+      <aside class="card">
+        <h3 style="margin-top:0">Preview & details</h3>
+        <p class="muted" id="details">No RUBUID generated yet.</p>
+
+        <div style="margin-top:12px">
+          <strong>What this does</strong>
+          <p class="muted" style="margin:6px 0 0">Creates a secure identifier suitable for use as a unique key, filename, token, or tracking ID. The time mode includes a sortable time prefix (millisecond epoch) plus random bytes.</p>
+        </div>
+
+        <div style="margin-top:12px">
+          <strong>Example formats</strong>
+          <pre id="examples" class="muted" style="padding:8px; border-radius:8px; background:rgba(255,255,255,0.01); font-size:13px; overflow:auto"></pre>
+        </div>
+      </aside>
+    </div>
+
+    <footer>
+      <div class="muted">Built with browser crypto · Local only · No data leaves your device</div>
+      <div class="muted">Drop into any project or save the file</div>
+    </footer>
+  </div>
+
+<script>
+/*
+  RUBUID generator
+  - Secure random using crypto.getRandomValues (falls back to Math.random if not available)
+  - Modes: v4-like (pure random), time (epoch ms prefix + random)
+  - Bit lengths: 128, 160, 256
+  - Separator and prefix options
+  - Bulk generation + download
+*/
+
+function bytesToHex(bytes){
+  return Array.from(bytes, b => b.toString(16).padStart(2,'0')).join('');
+}
+
+function secureRandomBytes(n){
+  if (window.crypto && crypto.getRandomValues) {
+    const arr = new Uint8Array(n);
+    crypto.getRandomValues(arr);
+    return arr;
+  } else {
+    // fallback (less secure)
+    const arr = new Uint8Array(n);
+    for (let i=0;i<n;i++){
+      arr[i] = Math.floor(Math.random()*256);
+    }
+    return arr;
+  }
+}
+
+function genRUBUID({bits=128, mode='v4', sep='-', prefix=true, upper=false} = {}){
+  // bits -> number of bits; bytes = bits/8
+  const bytesNeeded = Math.ceil(bits/8);
+  let hex;
+  if (mode === 'time'){
+    // include epoch ms as first 6 bytes (48 bits) to keep things sortable but compact
+    const epoch = BigInt(Date.now()); // ms
+    // write epoch into 6 bytes big-endian
+    const epochBytes = new Uint8Array(6);
+    let tmp = epoch;
+    for (let i=5;i>=0;i--){
+      epochBytes[i] = Number(tmp & 0xFFn);
+      tmp = tmp >> 8n;
+    }
+    const randomBytes = secureRandomBytes(Math.max(0, bytesNeeded - 6));
+    const combined = new Uint8Array(epochBytes.length + randomBytes.length);
+    combined.set(epochBytes, 0);
+    combined.set(randomBytes, epochBytes.length);
+    hex = bytesToHex(combined);
+  } else {
+    const r = secureRandomBytes(bytesNeeded);
+    hex = bytesToHex(r);
+  }
+
+  // format into groups for readability. We'll do groups of 4 hex chars (16 bits) separated by sep
+  const groups = [];
+  for (let i=0;i<hex.length;i+=4){
+    groups.push(hex.slice(i,i+4));
+  }
+  let out = groups.join(sep);
+
+  if (prefix){
+    out = 'RUB' + (sep || '') + out;
+  }
+  if (upper) out = out.toUpperCase();
+  return out;
+}
+
+function updateExamples(){
+  const bits = +document.getElementById('bits').value;
+  const sep = document.getElementById('sep').value;
+  const prefix = document.getElementById('prefix').checked;
+  const txt = [
+    'Random (v4-like): ' + genRUBUID({bits, mode:'v4', sep, prefix, upper:false}),
+    'Time+Random:      ' + genRUBUID({bits, mode:'time', sep, prefix, upper:false}),
+    'Uppercase sample: ' + genRUBUID({bits, mode:'v4', sep, prefix, upper:true})
+  ].join('\n');
+  document.getElementById('examples').textContent = txt;
+}
+
+function addToHistory(value){
+  const ul = document.getElementById('history');
+  const li = document.createElement('li');
+  li.className = 'hist-item';
+  const left = document.createElement('div');
+  left.style.display = 'flex'; left.style.gap = '8px'; left.style.alignItems='center';
+  const txt = document.createElement('span'); txt.textContent = value;
+  txt.style.fontFamily = 'ui-monospace, monospace'; txt.style.fontSize='13px';
+  left.appendChild(txt);
+  const right = document.createElement('div');
+  right.style.display='flex'; right.style.gap='6px';
+  const cbtn = document.createElement('button'); cbtn.className='ghost'; cbtn.textContent='Copy';
+  cbtn.onclick = () => { navigator.clipboard?.writeText(value).then(()=>cbtn.textContent='Copied'); setTimeout(()=>cbtn.textContent='Copy',900); };
+  const dbtn = document.createElement('button'); dbtn.className='ghost'; dbtn.textContent='Use';
+  dbtn.onclick = () => { document.getElementById('rubuid').textContent = value; };
+  right.appendChild(dbtn); right.appendChild(cbtn);
+  li.appendChild(left); li.appendChild(right);
+  ul.prepend(li);
+  // keep max 50
+  while (ul.children.length > 50) ul.removeChild(ul.lastChild);
+}
+
+function generateAndShow(single=true){
+  const bits = +document.getElementById('bits').value;
+  const mode = document.getElementById('mode').value;
+  const sep = document.getElementById('sep').value;
+  const prefix = document.getElementById('prefix').checked;
+  const upper = document.getElementById('upper').checked;
+  const val = genRUBUID({bits, mode, sep, prefix, upper});
+  document.getElementById('rubuid').textContent = val;
+  const details = [
+    `Mode: ${mode}`,
+    `Bits: ${bits}`,
+    `Separator: ${sep === '' ? '[none]' : sep}`,
+    `Prefix: ${prefix}`,
+    `Uppercase: ${upper}`,
+    `Generated: ${new Date().toLocaleString()}`
+  ];
+  document.getElementById('details').textContent = details.join(' · ');
+  if (single) addToHistory(val);
+  updateExamples();
+  return val;
+}
+
+document.getElementById('regenBtn').addEventListener('click', ()=>generateAndShow(true));
+document.getElementById('copyBtn').addEventListener('click', async ()=>{
+  const text = document.getElementById('rubuid').textContent;
+  if (!text || text === '—') return;
+  try {
+    await navigator.clipboard.writeText(text);
+    const b = document.getElementById('copyBtn');
+    b.textContent = 'Copied';
+    setTimeout(()=>b.textContent = 'Copy', 900);
+  } catch(e){
+    alert('Copy failed — your browser may block clipboard access. Value:\n\n' + text);
+  }
+});
+
+document.getElementById('bulkBtn').addEventListener('click', ()=>{
+  const items = [];
+  for (let i=0;i<10;i++){
+    items.push(generateAndShow(false));
+  }
+  // show last one as main
+  document.getElementById('rubuid').textContent = items[items.length-1];
+  // add all to history at once (prepend newest first)
+  items.reverse().forEach(v => addToHistory(v));
+});
+
+document.getElementById('downloadBtn').addEventListener('click', ()=>{
+  // download current history as txt
+  const ul = document.getElementById('history');
+  const lines = [];
+  for (const li of ul.children){
+    lines.push(li.querySelector('span').textContent);
+  }
+  if (lines.length === 0) {
+    alert('No RUBUIDs in history to download. Generate some first.');
+    return;
+  }
+  const blob = new Blob([lines.join('\n')], {type:'text/plain;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'rubuid-history.txt';
+  document.body.appendChild(a); a.click();
+  a.remove(); URL.revokeObjectURL(url);
+});
+
+document.getElementById('clearBtn').addEventListener('click', ()=>{
+  const ul = document.getElementById('history');
+  ul.innerHTML = '';
+});
+
+document.getElementById('bits').addEventListener('change', updateExamples);
+document.getElementById('sep').addEventListener('change', updateExamples);
+document.getElementById('prefix').addEventListener('change', updateExamples);
+document.getElementById('upper').addEventListener('change', updateExamples);
+document.getElementById('mode').addEventListener('change', updateExamples);
+
+// initial
+updateExamples();
+generateAndShow(true);
+
+</script>
+</body>
+</html>
